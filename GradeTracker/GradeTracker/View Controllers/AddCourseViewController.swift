@@ -17,8 +17,10 @@ class AddCourseViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
+        courseNameTextField.becomeFirstResponder()
+        
+        let lineColor = UIColor(red:0.12, green:0.23, blue:0.35, alpha:1.0)
+        self.courseNameTextField.setBottomLine(borderColor: lineColor)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -26,14 +28,19 @@ class AddCourseViewController: UIViewController {
         saveButton.isEnabled = false
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        courseNameTextField.resignFirstResponder()
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if let courseName = courseNameTextField.text {
-            newCourse = Course(name: courseName)
+        if let segueId = segue.identifier, segueId == "saveCourseSegue" {
+            newCourse = Course(name: courseNameTextField.text!)
         }
     }
     
@@ -44,6 +51,8 @@ class AddCourseViewController: UIViewController {
             saveButton.isEnabled = false
         }
     }
+    
+    
     
     /*
     // MARK: - Navigation

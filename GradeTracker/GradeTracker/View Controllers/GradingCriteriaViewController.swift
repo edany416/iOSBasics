@@ -7,15 +7,17 @@
 //
 
 import UIKit
+import os.log
 
-class GradingCriteriaViewController: UIViewController, UITableViewDataSource {
+class GradingCriteriaViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
     @IBOutlet weak var tableView: UITableView!
+    var selectedCourse:Course!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.dataSource = self
-        // Do any additional setup after loading the view.
+        tableView.delegate = self
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -23,35 +25,32 @@ class GradingCriteriaViewController: UIViewController, UITableViewDataSource {
         tableView.reloadData()
     }
     
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return dataManager.coursGradingCriterias.count
+        return selectedCourse.criteriaCount()
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "GradingCriteriaCell", for: indexPath)
-        let gradingCriteria = dataManager.gradingCriteriaAtIndex(indexPath.row)
+        let gradingCriteria = selectedCourse.criteriasList[indexPath.row]
         cell.textLabel?.text = gradingCriteria.name
-        
-        if let currentGrade = gradingCriteria.currentGrade {
-            cell.detailTextLabel?.text = "\(currentGrade)%"
-        } else {
-            cell.detailTextLabel?.text = "N/A"
-        }
         
         return cell
     }
     
-    @IBAction func unwindFromAddGCSave(_ sender: UIStoryboardSegue) {
-        if sender.source is AddGradingCriteriaViewController {
-            if let senderVC = sender.source as? AddGradingCriteriaViewController {
-                dataManager.appendGradingCriteria(senderVC.newGradingCriteria!)
-            }
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            selectedCourse.removeCriteriaAt(index: indexPath.row)
+            tableView.deleteRows(at: [indexPath], with: . automatic)
+            DataManager.saveCourseData()
         }
+    }
+    
+    
+    
+    @IBAction func unwindFromAddGCSave(_ sender: UIStoryboardSegue) {
+        
+        DataManager.saveCourseData()
         tableView.reloadData()
     }
     
@@ -59,16 +58,31 @@ class GradingCriteriaViewController: UIViewController, UITableViewDataSource {
         
     }
     
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        
-        if segue.identifier == "GradedAssignmentSegue",
-            let gradedAssignmentVC = segue.destination as? GradedAssignmentViewController {
-            let indexPath = tableView.indexPathForSelectedRow?.row
-            dataManager.selectedGradingCriteria = dataManager.gradingCriteriaAtIndex(indexPath!)
-            gradedAssignmentVC.navigationItem.title = dataManager.selectedGradingCriteria?.name
-        }
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        self.performSegue(withIdentifier: "GradeCriteriaTappedSegue", sender: self)
     }
     
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        
+        // Handle event of table view cell being tapped
+        if segue.identifier == "GradeCriteriaTappedSegue",
+            let gradedAssignmentVC = segue.destination as? GradedAssignmentViewController {
+            let indexPath = tableView.indexPathForSelectedRow?.row
+            let selectedCriteria = selectedCourse.criteriasList[indexPath!]
+            // Set destination VC title
+            gradedAssignmentVC.navigationItem.title = selectedCriteria.name
+            // Set the selected criteria in destination VC
+            gradedAssignmentVC.selectedCriteria = selectedCriteria
+        }
+        
+        // Handle event of add criteria button tapped
+        if segue.identifier == "AddCriteriaSegue",
+            let navController = segue.destination as? UINavigationController {
+                let addCriteriaVC = navController.topViewController as! AddGradingCriteriaViewController
+                addCriteriaVC.course = selectedCourse
+        }
+        
+    }
     
     /*
      // MARK: - Navigation

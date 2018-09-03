@@ -9,89 +9,72 @@
 import UIKit
 
 class AddGradingCriteriaViewController: UIViewController {
-
+    
     @IBOutlet weak var saveButton: UIBarButtonItem!
     @IBOutlet weak var criteriaNameTextField: UITextField!
-    @IBOutlet weak var criteriaWeightTextField: UITextField!
-    @IBOutlet weak var equalWeightsSwitch: UISwitch!
     var newGradingCriteria: GradingCriteria?
+    var course:Course!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
+        criteriaNameTextField.becomeFirstResponder()
+        
+        let lineColor = UIColor(red:0.12, green:0.23, blue:0.35, alpha:1.0)
+        self.criteriaNameTextField.setBottomLine(borderColor: lineColor)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        // Make sure user can't save without entering any data
         saveButton.isEnabled = false
     }
-
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        criteriaNameTextField.resignFirstResponder()
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
     
-    
-    @IBAction func criteriaNameEdited(_ sender: UITextField) {
-
-        guard let name = criteriaNameTextField.text else {
-            return
-        }
-        
-        guard  let weight = criteriaWeightTextField.text else {
-            return
-        }
-        
-        if !name.isEmpty && !weight.isEmpty {
-            saveButton.isEnabled = true
-        } else {
-            saveButton.isEnabled = false
-        }
-        
-    }
-    
-    @IBAction func criteriaWeightEdited(_ sender: UITextField) {
-
-        guard let name = criteriaNameTextField.text else {
-            return
-        }
-        
-        guard  let weight = criteriaWeightTextField.text else {
-            return
-        }
-        
-        if !name.isEmpty && !weight.isEmpty {
-            saveButton.isEnabled = true
-        } else {
-            saveButton.isEnabled = false
-        }
-    }
-    
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if let name = criteriaNameTextField.text, let weight = Double(criteriaWeightTextField.text!) {
-            newGradingCriteria = GradingCriteria(name: name, weight: weight, equalWeights: equalWeightsSwitch.isOn)
+        // Create the new grading criteria and append to list
+        if let segueId = segue.identifier, segueId == "unwindSave" {
+            newGradingCriteria = GradingCriteria(criteriaNameTextField.text!)
+            course.appendCriteria(newGradingCriteria!)
         }
     }
     
-    override func shouldPerformSegue(withIdentifier identifier: String, sender: Any?) -> Bool {
-        if identifier == "unwindSave" {
-            if Double(criteriaWeightTextField.text!) == nil {
-                return false
-            }
-        }
-        return true
-    }
     
+    // Set the isEnabled property for the save button based on whether
+    // text was entered into the name text field or not
+    @IBAction func criteriaNameEdited(_ sender: UITextField) {
+        
+        // Check if text field was instantiated
+        guard let name = criteriaNameTextField.text else {
+            return
+        }
+        
+        // Check if text was entered into name field.
+        // If text was entered, enable save button, otherwise keep disabled
+        if !name.isEmpty {
+            saveButton.isEnabled = true
+        } else {
+            saveButton.isEnabled = false
+        }
+        
+    }
     
     /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
+     // MARK: - Navigation
+     
+     // In a storyboard-based application, you will often want to do a little preparation before navigation
+     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+     // Get the new view controller using segue.destinationViewController.
+     // Pass the selected object to the new view controller.
+     }
+     */
+    
 }

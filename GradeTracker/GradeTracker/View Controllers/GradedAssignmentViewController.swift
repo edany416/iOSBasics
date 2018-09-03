@@ -11,35 +11,50 @@ import UIKit
 class GradedAssignmentViewController: UIViewController, UITableViewDataSource {
     
     @IBOutlet weak var tableView: UITableView!
+    var selectedCriteria:GradingCriteria!
+    let calculator = GradeCalculator()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.dataSource = self
+        tableView.allowsSelection = false
         // Do any additional setup after loading the view.
     }
     
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tableView.reloadData()
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return dataManager.criteriGradedAssignments.count
+        return selectedCriteria.gradedAssignments.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "GradedAssignmentCell", for: indexPath)
-        let gradedAssignment = dataManager.gradedAssignmentAtIndex(indexPath.row)
+        let gradedAssignment = selectedCriteria.gradedAssignments[indexPath.row]
+        
         cell.textLabel?.text = gradedAssignment.name
-        cell.detailTextLabel?.text = "\(gradedAssignment.gradeRecieved)%"
+        let formattedGrade = String(format:"%.2f",gradedAssignment.gradeRecieved)
+        cell.detailTextLabel?.text = "\(formattedGrade)%"
         
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            selectedCriteria.gradedAssignments.remove(at: indexPath.row)
+            tableView.deleteRows(at: [indexPath], with: . automatic)
+            DataManager.saveCourseData()
+        }
     }
     
     @IBAction func unwindFromAddGASave(_ sender: UIStoryboardSegue) {
         if sender.source is AddGradedAssignmentViewController {
             if let senderVC = sender.source as? AddGradedAssignmentViewController {
-                dataManager.appendGradedAssignment(senderVC.newGradedAssignment!)
+                selectedCriteria.gradedAssignments.append(senderVC.newGradedAssignment!)
+                calculator.updateGradingCriteriaGrade(gc: selectedCriteria)
+                DataManager.saveCourseData()
             }
         }
         

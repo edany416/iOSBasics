@@ -8,13 +8,30 @@
 
 import Foundation
 
-class GradedAssignment: GradedItem {
-    var weight: Double?
-    var gradeRecieved: Double
+class GradedAssignment: NSObject, NSCoding {
     
-    init(name: String, gradeRecieved: Double) {
+    var name: String
+    var gradeRecieved: Double
+    var assignmentWeight: Double
+    
+    init(name: String, gradeRecieved: Double, assignmentWeight: Double) {
+        self.name = name
         self.gradeRecieved = gradeRecieved
-        super.init(name: name)
+        self.assignmentWeight = assignmentWeight
+        
     }
     
+    func encode(with aCoder: NSCoder) {
+        aCoder.encode(name, forKey: PropertyKey.name)
+        aCoder.encode(gradeRecieved, forKey: PropertyKey.gradeRecieved)
+        aCoder.encode(assignmentWeight, forKey: PropertyKey.assignmentWeight)
+    }
+    
+    required convenience init?(coder aDecoder: NSCoder) {
+        let name = aDecoder.decodeObject(forKey: PropertyKey.name) as! String
+        let gradeRecieved = aDecoder.decodeDouble(forKey: PropertyKey.gradeRecieved)
+        let assignmentWeight = aDecoder.decodeDouble(forKey: PropertyKey.assignmentWeight)
+        
+        self.init(name: name, gradeRecieved: gradeRecieved, assignmentWeight: assignmentWeight)
+    }
 }

@@ -7,100 +7,111 @@
 //
 
 import UIKit
+import os.log
 
-let courseList = CourseList.shared
-let dataManager = DataManager.shared
-
-
-class CoursesViewController: UIViewController, UITableViewDataSource {
+class CoursesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
     @IBOutlet weak var courseTableView: UITableView!
+    var courseList:CourseList!
+    let calculator = GradeCalculator()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         courseTableView.dataSource = self
-        // Do any additional setup after loading the view.
+        courseTableView.delegate = self
+        courseList = CourseList()
         
-        //Test shit
-        let tempCourse = Course(name: "TestCourse 1")
-        let tempCourse2 = Course(name: "Test Course 2")
-        //tempCourse.currentGrade = 97
-        let tempHomework = GradingCriteria(name: "TestHomework", weight: 40, equalWeights: true)
-        //tempHomework.currentGrade = 95
-        tempCourse.gradingCriterias.append(tempHomework)
-        courseList.append(gradedItem: tempCourse)
-        courseList.append(gradedItem: tempCourse2)
-        let tempHW1 = GradedAssignment(name: "Test HW 1", gradeRecieved: 97)
-        tempHomework.gradedAssignments.append(tempHW1)
-        let tempHW2 = GradedAssignment(name: "Test HW 2", gradeRecieved: 85)
-        tempHomework.gradedAssignments.append(tempHW2)
+        // If saved data exits, load it from memory
+        if let savedCoures = DataManager.loadCourseData() {
+            courseList = CourseList(courses: savedCoures)
+            courseTableView.reloadData()
+        }
+        
+        // Create instance of a data manager
+        _ = DataManager(courseList: courseList)
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        // Reload tableview and calculate current course grade
         courseTableView.reloadData()
-    }
-    
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+        // Update course grade incase new assignments were added
+        calculator.updateCourseGrades(courseList: courseList)
     }
     
     @IBAction func unwindFromAddCourseSave(_ sender: UIStoryboardSegue) {
-        if sender.source is AddCourseViewController {
-            if let senderVC = sender.source as? AddCourseViewController {
-                courseList.append(gradedItem: senderVC.newCourse!)
-            }
-        }
-        courseTableView.reloadData()
+        if let sourceVC = sender.source as? AddCourseViewController {
+            // Append the newly added course
+            courseList.append(course: sourceVC.newCourse!)
+            // Save the newly added course to memory
+            DataManager.saveCourseData()
+            // Reload table view to show new course
+            courseTableView.reloadData()
+        } 
     }
     
     @IBAction func unwindFromAddCourseCancel(_ sender: UIStoryboardSegue) {
-        
+        // User decides not to add a new course
     }
+    
+    /**** Table view methods ****/
     
     func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
     
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return courseList.count
-        
+    // Handle table editting
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            courseList.removeCourseAt(indexPath.row)
+            courseTableView.deleteRows(at: [indexPath], with: . automatic)
+            DataManager.saveCourseData()
+        }
     }
     
+    // Caluclate the number of cells needed for the table view
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return courseList.count
+    }
+    
+    // Create and return a table view cell
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        // Initialize a cell
         let cell = tableView.dequeueReusableCell(withIdentifier: "CourseCell", for: indexPath)
-        let course = courseList.itemAtIndex(indexPath.row)
+        // Get the next course in the course list
+        let course = courseList.courseAtIndex(indexPath.row)
         
+        // Set the title of the cell
         cell.textLabel?.text = course.name
         
+        // If course grade can be calculated show the grade, else show dash
         if let grade = course.currentGrade {
-            cell.detailTextLabel?.text = "\(grade)%"
+            let formattedGrade = String(format:"%.2f",grade)
+            cell.detailTextLabel?.text = "\(formattedGrade)%"
         } else {
-            cell.detailTextLabel?.text = "N/A"
+            cell.detailTextLabel?.text = "-"
         }
         
         return cell
     }
     
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "CourseCellTappedSegue",
-            let gradingCriteriaVC = segue.destination as? GradingCriteriaViewController {
-            let indexPath = courseTableView.indexPathForSelectedRow?.row
-            dataManager.selectedCourse = (courseList.itemAtIndex(indexPath!) as! Course)
-            gradingCriteriaVC.navigationItem.title = dataManager.selectedCourse?.name
-        }
-        
+    // Go to course grading criteria when a course cell is tapped
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        self.performSegue(withIdentifier: "CourseTableCellSelectedSegue", sender: self)
     }
     
-    /*
-     // MARK: - Navigation
-     
-     // In a storyboard-based application, you will often want to do a little preparation before navigation
-     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-     // Get the new view controller using segue.destinationViewController.
-     // Pass the selected object to the new view controller.
-     }
-     */
+    // Pass on the necessary information to the grading criteria VC
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        let indexPath = courseTableView.indexPathForSelectedRow?.row
+        
+        if segue.identifier == "CourseTableCellSelectedSegue",
+            let gradingCriteriaVC = segue.destination as? GradingCriteriaViewController {
+            
+            let selectedCourse = courseList.courseAtIndex(indexPath!)
+            gradingCriteriaVC.navigationItem.title = selectedCourse.name
+            gradingCriteriaVC.selectedCourse = selectedCourse
+        }
+    }
     
 }
