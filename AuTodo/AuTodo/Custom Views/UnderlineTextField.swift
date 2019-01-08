@@ -22,7 +22,6 @@ class UnderlineTextField: UITextField {
     override func awakeFromNib() {
         
         // Setup Bottom-Border
-        
         self.translatesAutoresizingMaskIntoConstraints = false
         
         bottomBorder = UIView.init(frame: CGRect(x: 0, y: 0, width: 0, height: 0))
@@ -39,13 +38,4 @@ class UnderlineTextField: UITextField {
         self.borderStyle = .none
         
     }
-
-    /*
-    // Only override draw() if you perform custom drawing.
-    // An empty implementation adversely affects performance during animation.
-    override func draw(_ rect: CGRect) {
-        // Drawing code
-    }
-    */
-
 }
